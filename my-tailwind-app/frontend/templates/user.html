@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>User — Prompt Lab Templates</title>
+  <link rel="stylesheet" href="https://unpkg.com/antd/dist/reset.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50">
+  <div class="flex template-container">
+    <aside class="sidebar mr-6">
+      <div class="p-6 bg-slate-900 text-white rounded-2xl">Prompt Lab</div>
+      <nav class="mt-6 space-y-2">
+        <a class="block p-3 rounded-lg" href="admin.html">Overview</a>
+        <a class="block p-3 rounded-lg" href="prompts.html">Prompts</a>
+        <a class="block p-3 rounded-lg bg-white" href="user.html">Users</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1">
+      <header class="header mb-6">
+        <h1 class="text-2xl font-semibold">User Dashboard</h1>
+      </header>
+
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="card">Prompt Score<br/><strong class="text-2xl">92</strong></div>
+        <div class="card">Active Categories<br/><strong class="text-2xl">3</strong></div>
+        <div class="card">AI Tools Supported<br/><strong class="text-2xl">4</strong></div>
+      </section>
+
+      <section class="card">
+        <h2 class="text-lg font-semibold">Recent Activities</h2>
+        <ul class="mt-4 space-y-3">
+          <li class="p-3 bg-white rounded">You copied <strong>AI Document Rewrite</strong> — 2026-05-20</li>
+          <li class="p-3 bg-white rounded">You watched <strong>Prompt Setup for AI Audio Editing</strong> — 2026-05-19</li>
+          <li class="p-3 bg-white rounded">You tried <strong>Image Prompt Generator</strong> — 2026-05-18</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

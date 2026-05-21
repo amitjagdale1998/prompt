@@ -1,0 +1,7 @@
+/* Shared template styles */
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.template-container { max-width: 1200px; margin: 24px auto; }
+.sidebar { width: 260px; }
+.header { height: 64px; display:flex; align-items:center; padding:0 16px; background:#fff; border-bottom:1px solid #eef2f7; }
+.card { background: #fff; padding:16px; border-radius:12px; box-shadow: 0 8px 24px rgba(15,23,42,0.06); }
+.table-sample td, .table-sample th { padding:12px 8px; border-bottom:1px solid #f1f5f9; }

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Prompt Lab Templates</title>
+  <link rel="stylesheet" href="https://unpkg.com/antd/dist/reset.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50">
+  <div class="flex template-container">
+    <aside class="sidebar mr-6">
+      <div class="p-6 bg-slate-900 text-white rounded-2xl">Prompt Lab</div>
+      <nav class="mt-6 space-y-2">
+        <a class="block p-3 rounded-lg bg-white" href="admin.html">Overview</a>
+        <a class="block p-3 rounded-lg" href="prompts.html">Prompts</a>
+        <a class="block p-3 rounded-lg" href="user.html">Users</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1">
+      <header class="header mb-6">
+        <h1 class="text-2xl font-semibold">Admin Dashboard</h1>
+      </header>
+
+      <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="card">Total Prompts<br/><strong class="text-2xl">42</strong></div>
+        <div class="card">Media Assets<br/><strong class="text-2xl">18</strong></div>
+        <div class="card">Tags<br/><strong class="text-2xl">12</strong></div>
+        <div class="card">Copies<br/><strong class="text-2xl">298</strong></div>
+      </section>
+
+      <section class="card">
+        <h2 class="text-lg font-semibold mb-4">Prompt Usage (Top)</h2>
+        <table class="w-full table-sample">
+          <thead>
+            <tr><th>Prompt</th><th>Category</th><th>Copies</th><th>Last Copied</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>AI Document Rewrite</td><td>Document</td><td>124</td><td>2026-05-20</td></tr>
+            <tr><td>Image Prompt Generator</td><td>Image</td><td>98</td><td>2026-05-20</td></tr>
+            <tr><td>Audio Cleanup</td><td>Audio</td><td>76</td><td>2026-05-19</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

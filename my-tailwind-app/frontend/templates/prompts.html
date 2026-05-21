@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prompts — Prompt Lab Templates</title>
+  <link rel="stylesheet" href="https://unpkg.com/antd/dist/reset.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50">
+  <div class="flex template-container">
+    <aside class="sidebar mr-6">
+      <div class="p-6 bg-slate-900 text-white rounded-2xl">Prompt Lab</div>
+      <nav class="mt-6 space-y-2">
+        <a class="block p-3 rounded-lg" href="admin.html">Overview</a>
+        <a class="block p-3 rounded-lg bg-white" href="prompts.html">Prompts</a>
+        <a class="block p-3 rounded-lg" href="user.html">Users</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1">
+      <header class="header mb-6">
+        <h1 class="text-2xl font-semibold">Prompts</h1>
+      </header>
+
+      <section class="mb-6">
+        <div class="card mb-4">
+          <h2 class="text-lg">Supported AI Tools</h2>
+          <p class="text-sm text-slate-600">Use prompts with popular AI providers and trial results across tools.</p>
+          <div class="flex items-center gap-4 mt-4">
+            <a href="https://chat.openai.com" target="_blank" class="block w-20 h-12 p-2 bg-white rounded flex items-center justify-center">
+              <img alt="ChatGPT" src="https://logo.clearbit.com/openai.com" style="max-height:40px;object-fit:contain;" />
+            </a>
+            <a href="https://www.google.com/gemini" target="_blank" class="block w-20 h-12 p-2 bg-white rounded flex items-center justify-center">
+              <img alt="Gemini" src="https://logo.clearbit.com/google.com" style="max-height:40px;object-fit:contain;" />
+            </a>
+            <a href="https://www.anthropic.com" target="_blank" class="block w-20 h-12 p-2 bg-white rounded flex items-center justify-center">
+              <img alt="Claude" src="https://logo.clearbit.com/anthropic.com" style="max-height:40px;object-fit:contain;" />
+            </a>
+            <a href="https://codeium.com" target="_blank" class="block w-20 h-12 p-2 bg-white rounded flex items-center justify-center">
+              <img alt="Codeium" src="https://logo.clearbit.com/codeium.com" style="max-height:40px;object-fit:contain;" />
+            </a>
+            <a href="https://huggingface.co" target="_blank" class="block w-20 h-12 p-2 bg-white rounded flex items-center justify-center">
+              <img alt="Hugging Face" src="https://logo.clearbit.com/huggingface.co" style="max-height:40px;object-fit:contain;" />
+            </a>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <h2 class="text-lg">Search and filters</h2>
+          <div class="mt-3">
+            <input class="p-2 border rounded w-full" placeholder="Search prompts, tags, categories..." />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="card">
+            <h3 class="font-semibold mb-2">AI Document Rewrite</h3>
+            <p class="text-sm text-slate-600">Convert technical documentation into clearer, user-friendly writing.</p>
+            <div class="mt-4">
+              <button class="px-4 py-2 rounded bg-blue-600 text-white">Copy Prompt</button>
+              <button class="px-4 py-2 rounded border ml-2">Edit</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold mb-2">Image Prompt Generator</h3>
+            <p class="text-sm text-slate-600">Create structured image prompts for AI art and product visuals.</p>
+            <div class="mt-4">
+              <button class="px-4 py-2 rounded bg-blue-600 text-white">Copy Prompt</button>
+              <button class="px-4 py-2 rounded border ml-2">Edit</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold mb-2">Audio Cleanup Prompt</h3>
+            <p class="text-sm text-slate-600">Reduce noise and improve voice clarity for recordings.</p>
+            <div class="mt-4">
+              <button class="px-4 py-2 rounded bg-blue-600 text-white">Copy Prompt</button>
+              <button class="px-4 py-2 rounded border ml-2">Edit</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>
