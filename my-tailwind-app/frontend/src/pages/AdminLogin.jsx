@@ -4,7 +4,7 @@ import { Button, Card, Form, Input, Typography, message, Alert } from 'antd';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminLogin() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
 
@@ -18,6 +18,7 @@ export default function AdminLogin() {
         return;
       }
       if (result.user?.role !== 'admin') {
+        logout();
         setError('Admin login required. Please use an admin account.');
         return;
       }

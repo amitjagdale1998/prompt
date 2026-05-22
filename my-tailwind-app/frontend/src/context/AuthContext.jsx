@@ -9,15 +9,30 @@ export function AuthProvider({ children }) {
     return stored ? JSON.parse(stored) : null;
   });
   const [token, setToken] = useState(() => localStorage.getItem('promptlab-token'));
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-      localStorage.setItem('promptlab-token', token);
-    } else {
-      delete axios.defaults.headers.common.Authorization;
-      localStorage.removeItem('promptlab-token');
-    }
+    const syncAuth = async () => {
+      if (token) {
+        axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+        localStorage.setItem('promptlab-token', token);
+        try {
+          const response = await axios.get('/api/auth/me');
+          setUser(response.data.user);
+        } catch {
+          setUser(null);
+          setToken(null);
+          delete axios.defaults.headers.common.Authorization;
+          localStorage.removeItem('promptlab-token');
+        }
+      } else {
+        delete axios.defaults.headers.common.Authorization;
+        localStorage.removeItem('promptlab-token');
+      }
+      setAuthReady(true);
+    };
+
+    syncAuth();
   }, [token]);
 
   useEffect(() => {
@@ -51,7 +66,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, register, verifyAccount }}>
+    <AuthContext.Provider value={{ user, token, authReady, login, logout, register, verifyAccount }}>
       {children}
     </AuthContext.Provider>
   );
