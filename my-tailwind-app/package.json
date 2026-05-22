@@ -1,7 +1,10 @@
 {
   "name": "prompt-lab-monorepo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "frontend",
     "backend"
@@ -10,9 +13,16 @@
     "install-all": "npm install --workspaces",
     "dev:frontend": "npm --workspace frontend run dev",
     "dev:backend": "npm --workspace backend run dev",
-    "dev": "concurrently \"npm --workspace frontend run dev\" \"npm --workspace backend run dev\""
+    "dev": "concurrently -n frontend,backend -c blue,green \"npm --workspace frontend run dev\" \"npm --workspace backend run dev\"",
+    "build": "npm --workspace frontend run build",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,jsx,json,md,css}\""
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "@eslint/js": "^9.15.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0",
+    "prettier": "^3.4.1"
   }
 }

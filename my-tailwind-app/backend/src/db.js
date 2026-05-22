@@ -1,16 +1,12 @@
 import mongoose from 'mongoose';
+import { env } from './config/env.js';
 
-export async function connectDB(uri) {
-  const mongoUri = uri || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/promptlab';
-  try {
-    await mongoose.connect(mongoUri, {
-      // useNewUrlParser and useUnifiedTopology are default in mongoose v6+
-    });
-    console.log('MongoDB connected to', mongoUri);
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    throw err;
-  }
+mongoose.set('strictQuery', true);
+
+export async function connectDB(uri = env.MONGODB_URI) {
+  await mongoose.connect(uri, { autoIndex: env.NODE_ENV !== 'production' });
+  console.log(`MongoDB connected: ${uri}`);
+  return mongoose.connection;
 }
 
 export default mongoose;

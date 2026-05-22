@@ -1,132 +1,105 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import Prompt from '../models/Prompt.js';
-import authMiddleware from '../middleware/auth.js';
+import Media from '../models/Media.js';
+import { requireAuth } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { validate } from '../middleware/validate.js';
+import { HttpError } from '../middleware/errorHandler.js';
 
 const router = Router();
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const uploadTextSchema = z.object({
+  promptText: z.string().min(5).max(5000),
+  category: z.string().min(2).max(80),
+  description: z.string().max(5000).optional(),
+});
 
 const videoLibrary = [
   {
     id: 1,
     title: 'Prompt Setup for AI Audio Editing',
     description: 'Learn how to write prompts that improve audio quality and transcription accuracy.',
-    url: 'https://example.com/videos/audio-prompt-tutorial'
+    url: 'https://example.com/videos/audio-prompt-tutorial',
   },
   {
     id: 2,
     title: 'Document Prompt Best Practices',
     description: 'A guide for creating effective prompt templates for documents and SEO content.',
-    url: 'https://example.com/videos/document-prompt-guide'
-  }
+    url: 'https://example.com/videos/document-prompt-guide',
+  },
 ];
 
-router.get('/', async (req, res) => {
-  try {
-    const { q } = req.query;
-    const filter = q
-      ? {
-          $or: [
-            { title: { $regex: q, $options: 'i' } },
-            { category: { $regex: q, $options: 'i' } },
-            { description: { $regex: q, $options: 'i' } },
-            { tags: { $regex: q, $options: 'i' } }
-          ]
-        }
-      : {};
-
-    let prompts = await Prompt.find(filter).sort({ copyCount: -1, createdAt: -1 });
-    if (!prompts.length) {
-      prompts = await Prompt.insertMany([
-        {
-          title: 'AI Document Rewrite',
-          category: 'Document Editing',
-          description: 'Convert technical documentation into clearer, user-friendly writing.',
-          status: 'published',
-          copyCount: 132
-        },
-        {
-          title: 'Audio Cleanup Prompt',
-          category: 'Audio Editing',
-          description: 'Enhance voice clarity and remove background noise for podcasts and clips.',
-          status: 'published',
-          copyCount: 98
-        },
-        {
-          title: 'Image Prompt Generator',
-          category: 'Image Generation',
-          description: 'Generate a structured prompt for modern product mockups or landing page visuals.',
-          status: 'published',
-          copyCount: 85
-        }
-      ]);
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const filter = { status: 'published' };
+    if (q) {
+      const re = new RegExp(escapeRegex(q), 'i');
+      filter.$or = [{ title: re }, { category: re }, { description: re }, { tags: re }];
     }
+    const prompts = await Prompt.find(filter).sort({ copyCount: -1, createdAt: -1 }).limit(200);
     res.json(prompts);
-  } catch (error) {
-    console.error('Error fetching prompts:', error);
-    res.status(500).json({ error: 'Unable to fetch prompts' });
-  }
-});
+  })
+);
 
-router.post('/upload-text', authMiddleware, async (req, res) => {
-  const { promptText, category, description } = req.body;
-  if (!promptText || !category) {
-    return res.status(400).json({ error: 'promptText and category are required' });
-  }
-
-  try {
-    const newPrompt = new Prompt({
+router.post(
+  '/upload-text',
+  requireAuth,
+  validate(uploadTextSchema),
+  asyncHandler(async (req, res) => {
+    const { promptText, category, description } = req.body;
+    const prompt = await Prompt.create({
       title: promptText.slice(0, 100),
       category,
       description: description || promptText,
       status: 'published',
       createdBy: req.user._id,
-      createdByName: req.user.name || req.user.email
+      createdByName: req.user.name || req.user.email,
     });
-    await newPrompt.save();
-    res.json({ success: true, message: 'Prompt text uploaded successfully.', prompt: newPrompt });
-  } catch (error) {
-    console.error('Error saving prompt:', error);
-    res.status(500).json({ error: 'Unable to save prompt' });
-  }
-});
+    res.status(201).json({ success: true, message: 'Prompt text uploaded successfully.', prompt });
+  })
+);
 
-router.post('/:id/copy', async (req, res) => {
-  try {
-    const prompt = await Prompt.findById(req.params.id);
-    if (!prompt) {
-      return res.status(404).json({ error: 'Prompt not found' });
-    }
-    prompt.copyCount += 1;
-    await prompt.save();
+router.post(
+  '/:id/copy',
+  asyncHandler(async (req, res) => {
+    const prompt = await Prompt.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { copyCount: 1 } },
+      { new: true }
+    );
+    if (!prompt) throw new HttpError(404, 'Prompt not found');
     res.json({ success: true, prompt });
-  } catch (error) {
-    console.error('Error updating copy count:', error);
-    res.status(500).json({ error: 'Unable to update prompt copy count' });
-  }
-});
+  })
+);
 
-router.get('/videos', (req, res) => {
-  res.json(videoLibrary);
-});
+router.get('/videos', (_req, res) => res.json(videoLibrary));
 
-router.get('/videos/:id', (req, res) => {
+router.get('/videos/:id', (req, res, next) => {
   const video = videoLibrary.find((item) => item.id === Number(req.params.id));
-  if (!video) {
-    return res.status(404).json({ error: 'Video not found' });
-  }
+  if (!video) return next(new HttpError(404, 'Video not found'));
   res.json(video);
 });
 
-router.get('/:id', async (req, res) => {
-  try {
+router.get(
+  '/media/:promptId',
+  asyncHandler(async (req, res) => {
+    const items = await Media.find({ promptId: req.params.promptId }).sort({ createdAt: -1 });
+    res.json({ promptId: req.params.promptId, mediaItems: items });
+  })
+);
+
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const prompt = await Prompt.findById(req.params.id);
-    if (!prompt) {
-      return res.status(404).json({ error: 'Prompt not found' });
-    }
+    if (!prompt) throw new HttpError(404, 'Prompt not found');
     res.json(prompt);
-  } catch (error) {
-    console.error('Error fetching prompt by id:', error);
-    res.status(500).json({ error: 'Unable to fetch prompt' });
-  }
-});
+  })
+);
 
 export default router;

@@ -1,38 +1,26 @@
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
-import adminRoutes from './routes/admin.js';
-import authRoutes from './routes/auth.js';
-import promptRoutes from './routes/prompts.js';
-import userRoutes from './routes/users.js';
+import { env } from './config/env.js';
+import app from './app.js';
 import { connectDB } from './db.js';
-import path from 'path';
 
-const app = express();
-const port = process.env.PORT || 5000;
+const shutdown = (signal) => {
+  console.log(`Received ${signal}. Shutting down gracefully...`);
+  process.exit(0);
+};
 
-app.use(cors());
-app.use(express.json());
-app.use(morgan('tiny'));
-
-app.get('/', (req, res) => {
-  res.json({ message: 'Prompt Lab backend is running' });
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
 });
-
-app.use('/uploads', express.static(path.resolve('uploads')));
-app.use('/api/admin', adminRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/prompts', promptRoutes);
-app.use('/api/users', userRoutes);
 
 async function start() {
   try {
-    await connectDB(process.env.MONGODB_URI);
-    app.listen(port, () => {
-      console.log(`Backend listening on http://localhost:${port}`);
+    await connectDB();
+    app.listen(env.PORT, () => {
+      console.log(`Backend listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
     });
   } catch (err) {
-    console.error('Failed to start server due to DB connection error');
+    console.error('Failed to start server:', err);
     process.exit(1);
   }
 }

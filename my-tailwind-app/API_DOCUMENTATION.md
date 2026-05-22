@@ -4,6 +4,18 @@
 
 - Local development: `http://localhost:5000/api`
 
+## Authentication
+
+Protected endpoints expect `Authorization: Bearer <jwt>`. Obtain the token via `POST /api/auth/login`. Tokens are signed with `JWT_SECRET` and expire per `JWT_EXPIRES_IN` (default `7d`).
+
+| Group | Auth |
+| --- | --- |
+| `/api/auth/*` | Public (rate-limited) |
+| `/api/prompts` (GET) | Public |
+| `/api/prompts/upload-text` | Authenticated |
+| `/api/admin/*` | Authenticated + role `admin` |
+| `/api/users/*` | Authenticated (admins can list all) |
+
 ---
 
 ## Auth APIs
@@ -394,28 +406,54 @@ Response:
 
 ## User APIs
 
+All `/api/users` endpoints require `Authorization: Bearer <token>`.
+
 ### GET /api/users
 
-Return the list of users.
-
-Response:
-```json
-[
-  { "id": 1, "name": "Jane Doe", "role": "user", "status": "active" },
-  { "id": 2, "name": "Mark Smith", "role": "admin", "status": "active" }
-]
-```
+Admin-only. Returns a paginated list of recent users.
 
 ### GET /api/users/:id
 
-Return a single user by ID.
+Returns a single user. Non-admins can only fetch their own record.
 
 Response:
 ```json
 {
-  "id": 1,
+  "id": "65f...",
   "name": "Jane Doe",
+  "email": "jane@example.com",
   "role": "user",
-  "status": "active"
+  "status": "active",
+  "isVerified": true,
+  "createdAt": "2026-05-21T10:00:00.000Z"
 }
 ```
+
+---
+
+## Error responses
+
+All errors share a common shape:
+
+```json
+{ "error": "Human readable message", "details": [/* optional */] }
+```
+
+| Status | Meaning |
+| --- | --- |
+| 400 | Validation error (Zod) |
+| 401 | Missing / invalid auth token |
+| 403 | Authenticated but not allowed |
+| 404 | Resource not found |
+| 409 | Duplicate resource (e.g., email already registered) |
+| 429 | Rate limit exceeded |
+| 500 | Unexpected server error |
+
+## Rate limiting
+
+- Global: `RATE_LIMIT_MAX` requests per `RATE_LIMIT_WINDOW_MS` per IP on `/api/*`
+- Auth: 20 requests / 15 min per IP on `/api/auth/*`
+
+## Health check
+
+`GET /api/health` → `{ "status": "ok", "uptime": <seconds> }`

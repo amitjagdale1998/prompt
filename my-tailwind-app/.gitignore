@@ -1,7 +1,17 @@
 node_modules/
 dist/
+build/
 frontend/dist/
 backend/node_modules/
 backend/uploads/
+backend/.env
 .DS_Store
 .env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+.vscode/*
+!.vscode/extensions.json
+.idea/
+coverage/
