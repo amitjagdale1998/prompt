@@ -3,8 +3,6 @@ import { Card, Col, Input, Row, Tag, Typography, Tooltip, message, Badge, Modal,
 import { CopyOutlined, CameraOutlined, PictureOutlined, VideoCameraOutlined, SoundOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { aiTools } from '../data/aiTools';
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 
 const demoPrompts = [
   // Code Editing (3 prompts)

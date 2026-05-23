@@ -350,7 +350,7 @@ export default function AdminDashboard() {
     }
   };
 
-*** End Patch
+  const promptColumns = useMemo(
     () => [
       {
         title: 'Title',
