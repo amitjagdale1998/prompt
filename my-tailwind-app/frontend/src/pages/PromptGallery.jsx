@@ -21,7 +21,16 @@ const demoPrompts = [
   },
 ];
 
-const MEDIA_CATEGORIES = ['image', 'audio', 'video'];
+const FALLBACK_IMAGE = (seed = 'prompt-lab') => `https://picsum.photos/seed/${encodeURIComponent(seed)}/1200/800`;
+
+const getPrimaryImage = (prompt) => prompt?.media?.beforeImage || prompt?.imageUrl || prompt?.media?.afterImage || '';
+const getAfterImage = (prompt) => prompt?.media?.afterImage || getPrimaryImage(prompt);
+
+const onImageError = (event, seed) => {
+  if (event.currentTarget.dataset.fallbackApplied === '1') return;
+  event.currentTarget.dataset.fallbackApplied = '1';
+  event.currentTarget.src = FALLBACK_IMAGE(seed);
+};
 
 function PromptDetailModal({ prompt, visible, onClose }) {
   // Always render modal so open/close behavior is consistent.
@@ -33,6 +42,10 @@ function PromptDetailModal({ prompt, visible, onClose }) {
     navigator.clipboard.writeText(text);
     message.success('Copied to clipboard!');
   };
+
+  const primaryImage = getPrimaryImage(prompt);
+  const afterImage = getAfterImage(prompt);
+  const hasBeforeAfter = Boolean(prompt?.media?.beforeImage && prompt?.media?.afterImage);
 
   return (
     <Modal
@@ -60,33 +73,45 @@ function PromptDetailModal({ prompt, visible, onClose }) {
         )}
 
         {/* Before/After Gallery */}
-        {prompt?.media && prompt.category === 'image' && prompt.media.beforeImage && prompt.media.afterImage && (
+        {prompt?.category === 'image' && primaryImage && (
           <div>
             <div className="flex items-center gap-3 mb-3">
               <CameraOutlined style={{ fontSize: 18, color: '#1890ff' }} />
-              <Typography.Text strong>Before & After Example</Typography.Text>
+              <Typography.Text strong>{hasBeforeAfter ? 'Before & After Example' : 'Image Preview'}</Typography.Text>
             </div>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-7">
+            <div className={hasBeforeAfter ? 'grid grid-cols-12 gap-4' : ''}>
+              <div className={hasBeforeAfter ? 'col-span-7' : ''}>
                 <div className="rounded-lg overflow-hidden border" style={{ height: 260 }}>
-                  <img src={prompt.media.beforeImage} alt="Before" className="w-full h-full object-cover" />
+                  <img
+                    src={primaryImage}
+                    alt="Prompt preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => onImageError(e, prompt?.title || 'prompt')}
+                  />
                 </div>
-                <Typography.Text type="secondary" className="block mt-2 text-sm">Before</Typography.Text>
+                <Typography.Text type="secondary" className="block mt-2 text-sm">{hasBeforeAfter ? 'Before' : 'Preview'}</Typography.Text>
               </div>
-              <div className="col-span-5 flex flex-col gap-4">
-                <div className="flex-1 rounded-lg overflow-hidden border" style={{ height: 160 }}>
-                  <img src={prompt.media.afterImage} alt="After" className="w-full h-full object-cover" />
+              {hasBeforeAfter && (
+                <div className="col-span-5 flex flex-col gap-4">
+                  <div className="flex-1 rounded-lg overflow-hidden border" style={{ height: 160 }}>
+                    <img
+                      src={afterImage}
+                      alt="After"
+                      className="w-full h-full object-cover"
+                      onError={(e) => onImageError(e, `${prompt?.title || 'prompt'}-after`)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Typography.Text type="secondary" className="text-sm">After</Typography.Text>
+                    <Tag color="green">Edited</Tag>
+                  </div>
+                  {prompt.media?.description && (
+                    <Typography.Paragraph type="secondary" className="!mt-1 text-sm italic">
+                      {prompt.media.description}
+                    </Typography.Paragraph>
+                  )}
                 </div>
-                <div className="flex items-center justify-between">
-                  <Typography.Text type="secondary" className="text-sm">After</Typography.Text>
-                  <Tag color="green">Edited</Tag>
-                </div>
-                {prompt.media.description && (
-                  <Typography.Paragraph type="secondary" className="!mt-1 text-sm italic">
-                    {prompt.media.description}
-                  </Typography.Paragraph>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -199,18 +224,31 @@ function PromptCard({ prompt, onViewDetails }) {
     message.success('Copied!');
   };
 
+  const primaryImage = getPrimaryImage(prompt);
+  const afterImage = getAfterImage(prompt);
+
   return (
     <Card
       hoverable
       onClick={() => onViewDetails(prompt)}
       cover={
-        prompt.category === 'image' && prompt.media?.beforeImage ? (
+        prompt.category === 'image' && primaryImage ? (
           <div className="relative overflow-hidden h-40 flex">
             <div className="w-2/3 h-full overflow-hidden">
-              <img src={prompt.media.beforeImage} alt={prompt.title} className="w-full h-full object-cover transition-transform hover:scale-105" />
+              <img
+                src={primaryImage}
+                alt={prompt.title}
+                className="w-full h-full object-cover transition-transform hover:scale-105"
+                onError={(e) => onImageError(e, prompt.title)}
+              />
             </div>
             <div className="w-1/3 h-full border-l relative">
-              <img src={prompt.media.afterImage || prompt.media.beforeImage} alt={`${prompt.title} after`} className="w-full h-full object-cover" />
+              <img
+                src={afterImage}
+                alt={`${prompt.title} after`}
+                className="w-full h-full object-cover"
+                onError={(e) => onImageError(e, `${prompt.title}-after`)}
+              />
               <div className="absolute top-2 left-2 bg-white/80 rounded px-2 py-1 text-xs font-medium flex items-center gap-2">
                 <ArrowRightOutlined style={{ color: '#1890ff' }} />
                 <span>After</span>

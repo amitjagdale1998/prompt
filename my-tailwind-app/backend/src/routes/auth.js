@@ -29,6 +29,16 @@ const verifySchema = z.object({
   token: z.string().min(4),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  token: z.string().length(6),
+  password: z.string().min(8).max(128),
+});
+
 const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
 
 const toPublicUser = (user) => ({
@@ -131,6 +141,55 @@ router.post(
       success: true,
       message: 'Email verified successfully. You can now login.',
       user: toPublicUser(user),
+    });
+  })
+);
+
+router.post(
+  '/forgot-password',
+  validate(forgotPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email }).select('+resetPasswordToken +resetPasswordExpires');
+    if (user) {
+      const resetOtp = generateOtp();
+      user.resetPasswordToken = resetOtp;
+      user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000);
+      await user.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'If this email exists, an OTP has been sent to your email address.',
+      resetToken: !isProd && user ? user.resetPasswordToken : undefined,
+    });
+  })
+);
+
+router.post(
+  '/reset-password',
+  validate(resetPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { email, token, password } = req.body;
+
+    const user = await User.findOne({ email }).select('+password +resetPasswordToken +resetPasswordExpires');
+    if (!user || !user.resetPasswordToken || !user.resetPasswordExpires) {
+      throw new HttpError(400, 'Invalid or expired reset token.');
+    }
+
+    if (user.resetPasswordToken !== token || user.resetPasswordExpires.getTime() < Date.now()) {
+      throw new HttpError(400, 'Invalid or expired reset token.');
+    }
+
+    user.password = await bcrypt.hash(password, 12);
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successful. Please login with your new password.',
     });
   })
 );

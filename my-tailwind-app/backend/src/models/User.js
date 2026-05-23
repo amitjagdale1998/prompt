@@ -18,6 +18,8 @@ const UserSchema = new Schema(
     status: { type: String, enum: ['active', 'suspended'], default: 'active' },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String, default: null, select: false },
+    resetPasswordToken: { type: String, default: null, select: false },
+    resetPasswordExpires: { type: Date, default: null, select: false },
   },
   {
     timestamps: true,
@@ -29,6 +31,8 @@ const UserSchema = new Schema(
         delete ret._id;
         delete ret.password;
         delete ret.verificationToken;
+        delete ret.resetPasswordToken;
+        delete ret.resetPasswordExpires;
       },
     },
   }

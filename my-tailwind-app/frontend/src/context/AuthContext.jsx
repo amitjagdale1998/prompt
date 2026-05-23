@@ -60,13 +60,27 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
+  const forgotPassword = async (email) => {
+    const response = await axios.post('/api/auth/forgot-password', { email });
+    return response.data;
+  };
+
+  const resetPassword = async ({ email, token: resetToken, password }) => {
+    const response = await axios.post('/api/auth/reset-password', {
+      email,
+      token: resetToken,
+      password,
+    });
+    return response.data;
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, authReady, login, logout, register, verifyAccount }}>
+    <AuthContext.Provider value={{ user, token, authReady, login, logout, register, verifyAccount, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
