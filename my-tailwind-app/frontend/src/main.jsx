@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import 'antd/dist/reset.css';
-import App from './App';
+import AppMain from './AppMain';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider, useThemeMode } from './context/ThemeContext';
 import './index.css';
@@ -28,7 +28,7 @@ function Providers() {
     >
       <AuthProvider>
         <BrowserRouter>
-          <App />
+          <AppMain />
         </BrowserRouter>
       </AuthProvider>
     </ConfigProvider>

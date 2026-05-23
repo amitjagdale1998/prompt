@@ -2,6 +2,23 @@
 
 Full-stack monorepo for the Prompt Lab platform: a Vite + React + Tailwind v4 + Ant Design v6 frontend backed by a hardened Express 5 + MongoDB API.
 
+> 💡 **New to Prompt Lab?** Start with [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup!
+
+---
+
+## 📚 Documentation
+
+Choose your guide based on your role:
+
+| Document | For | Reading Time |
+|----------|-----|--------------|
+| **[QUICKSTART.md](QUICKSTART.md)** | Everyone - Get started fast | ⚡ 5 min |
+| **[USER_GUIDE.md](USER_GUIDE.md)** | Users - All features & pages | 📖 10 min |
+| **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** | Admins - Management & uploads | 🛠️ 15 min |
+| **[SITEMAP.md](SITEMAP.md)** | Developers - All pages & flows | 🗺️ 5 min |
+| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Developers - API endpoints | 📡 10 min |
+| **[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)** | Architects - System overview | 🏗️ 15 min |
+
 ## Project structure
 
 ```
@@ -92,8 +109,66 @@ See [backend/.env.example](backend/.env.example) for the full list. The backend 
 | `npm run lint` | ESLint across the monorepo |
 | `npm run format` | Prettier write |
 
-## Documentation
+## Documentation & Guides
 
-- [requirements.md](requirements.md) — product + monetization requirements
-- [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) — architecture and flows
-- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) — REST API reference
+### 📖 User & Admin Documentation
+- **[USER_GUIDE.md](USER_GUIDE.md)** — Complete user guide with all features and page links
+- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** — Administrator guide for prompt & media management
+- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** — REST API reference for developers
+
+### 🏗️ Technical Documentation
+- **[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)** — Architecture, flows, and system overview
+- **[requirements.md](requirements.md)** — Product requirements and features
+
+---
+
+## 🌐 Quick Navigation - All Website Pages
+
+### Public Pages (No Login)
+| Page | URL | Purpose |
+|------|-----|---------|
+| Home | `http://localhost:4173/` | Landing page |
+| Prompt Gallery | `http://localhost:4173/prompts` | Browse all prompts |
+| Prompt Guide | `http://localhost:4173/prompt-guide` | Learn prompt writing |
+| Video Guide | `http://localhost:4173/video-guide` | Watch tutorials |
+
+### Authentication Pages
+| Page | URL | Purpose |
+|------|-----|---------|
+| User Login | `http://localhost:4173/login` | User login |
+| User Register | `http://localhost:4173/register` | Create user account |
+| Verify Account | `http://localhost:4173/verify` | Verify email |
+| Admin Login | `http://localhost:4173/admin/login` | Admin login |
+| Admin Register | `http://localhost:4173/admin/register` | Create admin account |
+
+### Protected Pages (Login Required)
+| Page | URL | Role | Purpose |
+|------|-----|------|---------|
+| User Dashboard | `http://localhost:4173/user` | User | Manage your prompts |
+| Admin Dashboard | `http://localhost:4173/admin` | Admin | Manage all prompts & users |
+
+**👉 See [USER_GUIDE.md](USER_GUIDE.md) for detailed page descriptions and features**
+
+---
+
+## 🎯 Key Features
+
+### 👤 For Users
+- ✅ Browse public prompt gallery
+- ✅ Create account with email verification
+- ✅ Upload custom prompts with descriptions
+- ✅ View your uploaded prompts
+- ✅ Track prompt copy counts
+- ✅ Access learning guides and videos
+- ✅ Dark/Light theme toggle
+
+### 🛠️ For Administrators
+- ✅ Manage all prompts (create, edit, delete)
+- ✅ Upload and organize media (images, videos)
+- ✅ View user management dashboard
+- ✅ Access analytics and statistics
+- ✅ Moderate community prompts
+- ✅ Bulk upload capabilities
+- ✅ Export data and reports
+
+**👉 See [ADMIN_GUIDE.md](ADMIN_GUIDE.md) for complete admin features**

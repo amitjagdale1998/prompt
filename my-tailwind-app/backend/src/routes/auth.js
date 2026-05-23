@@ -102,6 +102,24 @@ router.post(
   '/verify',
   validate(verifySchema),
   asyncHandler(async (req, res) => {
+    // In development, accept any OTP for testing
+    if (!isProd) {
+      const user = await User.findOne({ verificationToken: { $exists: true } }).select('+verificationToken');
+      if (!user) throw new HttpError(404, 'No user found for verification.');
+
+      user.isVerified = true;
+      user.verificationToken = null;
+      await user.save();
+
+      res.json({
+        success: true,
+        message: 'Email verified successfully (dev mode). You can now login.',
+        user: toPublicUser(user),
+      });
+      return;
+    }
+
+    // Production: verify actual token
     const user = await User.findOne({ verificationToken: req.body.token }).select('+verificationToken');
     if (!user) throw new HttpError(404, 'Invalid verification token.');
 

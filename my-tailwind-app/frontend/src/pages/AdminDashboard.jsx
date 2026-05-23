@@ -19,9 +19,9 @@ import {
   Upload,
   message,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { DeleteOutlined, EditOutlined, ReloadOutlined, SaveOutlined, CameraOutlined, PictureOutlined, UploadOutlined, PlusOutlined, ImportOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useThemeMode } from '../context/ThemeContext';
+import axios from 'axios';
 
 const { Dragger } = Upload;
 
@@ -34,11 +34,23 @@ export default function AdminDashboard() {
   const [promptSearch, setPromptSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState([]);
+  const [imageBeforeFile, setImageBeforeFile] = useState(null);
+  const [imageAfterFile, setImageAfterFile] = useState(null);
   const [pdfFiles, setPdfFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [audioFiles, setAudioFiles] = useState([]);
+  const [uploadCategory, setUploadCategory] = useState('');
   const [uploading, setUploading] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  // Bulk upload state
+  const [bulkJsonInput, setBulkJsonInput] = useState('');
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [bulkResults, setBulkResults] = useState([]);
 
   const [promptForm] = Form.useForm();
   const [userForm] = Form.useForm();
@@ -76,10 +88,29 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     refreshAll();
+    (async () => {
+      try {
+        const res = await axios.get('/api/site/categories');
+        if (Array.isArray(res.data)) setCategories(res.data);
+      } catch (err) {
+        console.warn('Failed to load categories', err?.message || err);
+      }
+    })();
   }, []);
 
   const beforeImageUpload = (file) => {
+    // legacy: keep list if multiple images provided
     setImageFiles((prev) => [...prev, file]);
+    return false;
+  };
+
+  const beforeImageBeforeUpload = (file) => {
+    setImageBeforeFile(file);
+    return false;
+  };
+
+  const beforeImageAfterUpload = (file) => {
+    setImageAfterFile(file);
     return false;
   };
 
@@ -88,13 +119,29 @@ export default function AdminDashboard() {
     return false;
   };
 
+  const beforeVideoUpload = (file) => {
+    setVideoFiles([file]);
+    return false;
+  };
+
+  const beforeAudioUpload = (file) => {
+    setAudioFiles([file]);
+    return false;
+  };
+
   const removeImage = (file) => {
     setImageFiles((prev) => prev.filter((item) => item.uid !== file.uid));
   };
 
+  const removeImageBefore = () => setImageBeforeFile(null);
+  const removeImageAfter = () => setImageAfterFile(null);
+
   const removePdf = () => {
     setPdfFiles([]);
   };
+
+  const removeVideo = () => setVideoFiles([]);
+  const removeAudio = () => setAudioFiles([]);
 
   const handleUpload = async (values) => {
     if (!values.promptText && !pdfFiles.length) {
@@ -111,9 +158,21 @@ export default function AdminDashboard() {
       formData.append('promptText', values.promptText);
     }
 
-    imageFiles.forEach((file) => {
-      formData.append('images', file);
-    });
+    if (uploadCategory === 'image') {
+      // support dedicated before/after slots
+      if (imageBeforeFile) formData.append('beforeImage', imageBeforeFile);
+      if (imageAfterFile) formData.append('afterImage', imageAfterFile);
+      // legacy: allow multiple images as well
+      imageFiles.forEach((file) => formData.append('images', file));
+    }
+
+    if (uploadCategory === 'video' && videoFiles[0]) {
+      formData.append('video', videoFiles[0]);
+    }
+
+    if (uploadCategory === 'audio' && audioFiles[0]) {
+      formData.append('audio', audioFiles[0]);
+    }
 
     if (pdfFiles[0]) {
       formData.append('promptPdf', pdfFiles[0]);
@@ -127,6 +186,8 @@ export default function AdminDashboard() {
       message.success('Prompt and media uploaded successfully.');
       setImageFiles([]);
       setPdfFiles([]);
+      setVideoFiles([]);
+      setAudioFiles([]);
       await refreshAll();
     } catch (error) {
       console.error(error);
@@ -228,7 +289,68 @@ export default function AdminDashboard() {
     }
   };
 
-  const promptColumns = useMemo(
+  // Bulk upload handler for multiple prompts from JSON
+  const handleBulkUpload = async () => {
+    try {
+      if (!bulkJsonInput.trim()) {
+        message.error('Please paste JSON data');
+        return;
+      }
+      const data = JSON.parse(bulkJsonInput);
+      const prompts = Array.isArray(data) ? data : [data];
+      
+      if (!prompts.length) {
+        message.error('No valid prompts found in JSON');
+        return;
+      }
+
+      setBulkUploading(true);
+      setBulkProgress({ current: 0, total: prompts.length });
+      setBulkResults([]);
+
+      const results = [];
+      for (let i = 0; i < prompts.length; i++) {
+        try {
+          const prompt = prompts[i];
+          const payload = {
+            title: prompt.title || prompt.promptText?.slice(0, 100) || `Prompt ${i + 1}`,
+            category: prompt.category || 'code',
+            description: prompt.description || prompt.promptText || '',
+            promptText: prompt.promptText || '',
+            tags: Array.isArray(prompt.tags) ? prompt.tags : [],
+            status: prompt.status || 'published',
+            difficulty: prompt.difficulty || 'beginner',
+            useCases: Array.isArray(prompt.useCases) ? prompt.useCases : [],
+            aiTools: Array.isArray(prompt.aiTools) ? prompt.aiTools : [],
+            rating: prompt.rating || 0,
+            ratingCount: prompt.ratingCount || 0,
+            copyCount: prompt.copyCount || 0,
+          };
+
+          const res = await axios.post('/api/prompts/upload-text', payload, {
+            headers: { 'Content-Type': 'application/json' },
+          });
+          
+          results.push({ success: true, title: payload.title, id: res.data.prompt?._id });
+          setBulkProgress((prev) => ({ ...prev, current: i + 1 }));
+        } catch (err) {
+          results.push({ success: false, title: prompts[i].title || `Prompt ${i + 1}`, error: err.response?.data?.error || err.message });
+          setBulkProgress((prev) => ({ ...prev, current: i + 1 }));
+        }
+      }
+
+      setBulkResults(results);
+      const successCount = results.filter((r) => r.success).length;
+      message.success(`Uploaded ${successCount}/${prompts.length} prompts`);
+      await refreshAll();
+    } catch (err) {
+      message.error('Invalid JSON format. Please provide an array of prompt objects.');
+    } finally {
+      setBulkUploading(false);
+    }
+  };
+
+*** End Patch
     () => [
       {
         title: 'Title',
@@ -482,8 +604,8 @@ export default function AdminDashboard() {
                     <Form.Item label="Prompt title" name="title">
                       <Input placeholder="Optional title for this prompt upload" />
                     </Form.Item>
-                    <Form.Item label="Category" name="category">
-                      <Input placeholder="E.g. Image Editing, Audio Editing, Coding" />
+                    <Form.Item label="Category" name="category" rules={[{ required: true, message: 'Please select a category' }]}>
+                      <Select placeholder="Select a category" options={categories} onChange={(val) => setUploadCategory(val)} />
                     </Form.Item>
                     <Form.Item label="Description" name="description">
                       <Input.TextArea rows={3} placeholder="Optional prompt description" />
@@ -492,18 +614,75 @@ export default function AdminDashboard() {
                       <Input.TextArea rows={5} placeholder="Enter prompt text or upload a PDF instead" />
                     </Form.Item>
 
-                    <Form.Item label="Upload images">
-                      <Dragger
-                        multiple
-                        beforeUpload={beforeImageUpload}
-                        fileList={imageFiles}
-                        onRemove={removeImage}
-                        accept="image/*"
-                      >
-                        <p className="ant-upload-drag-icon">Drag images here or click to select</p>
-                        <p className="ant-upload-text">Upload multiple image references for this prompt.</p>
-                      </Dragger>
-                    </Form.Item>
+                    {uploadCategory === 'image' && (
+                      <>
+                        <Form.Item label="Before image (original)">
+                          <Dragger
+                            multiple={false}
+                            beforeUpload={beforeImageBeforeUpload}
+                            fileList={imageBeforeFile ? [imageBeforeFile] : []}
+                            onRemove={removeImageBefore}
+                            accept="image/*"
+                          >
+                            <div className="flex items-center gap-3">
+                              <CameraOutlined style={{ fontSize: 22, color: '#1890ff' }} />
+                              <div>
+                                <p className="ant-upload-text">Upload the original (before) image</p>
+                                <p className="ant-upload-hint text-sm">Single image representing the original state.</p>
+                              </div>
+                            </div>
+                          </Dragger>
+                        </Form.Item>
+
+                        <Form.Item label="After image (edited)">
+                          <Dragger
+                            multiple={false}
+                            beforeUpload={beforeImageAfterUpload}
+                            fileList={imageAfterFile ? [imageAfterFile] : []}
+                            onRemove={removeImageAfter}
+                            accept="image/*"
+                          >
+                            <div className="flex items-center gap-3">
+                              <PictureOutlined style={{ fontSize: 22, color: '#13c2c2' }} />
+                              <div>
+                                <p className="ant-upload-text">Upload the edited (after) image</p>
+                                <p className="ant-upload-hint text-sm">Single image showing the edited result.</p>
+                              </div>
+                            </div>
+                          </Dragger>
+                        </Form.Item>
+                      </>
+                    )}
+
+                    {uploadCategory === 'video' && (
+                      <Form.Item label="Upload video">
+                        <Dragger
+                          multiple={false}
+                          beforeUpload={beforeVideoUpload}
+                          fileList={videoFiles}
+                          onRemove={removeVideo}
+                          accept="video/*"
+                        >
+                          <p className="ant-upload-drag-icon">Drag a video here or click to select</p>
+                          <p className="ant-upload-text">Upload a single video file for this prompt.</p>
+                        </Dragger>
+                      </Form.Item>
+                    )}
+
+                    {uploadCategory === 'audio' && (
+                      <Form.Item label="Upload audio">
+                        <Dragger
+                          multiple={false}
+                          beforeUpload={beforeAudioUpload}
+                          fileList={audioFiles}
+                          onRemove={removeAudio}
+                          accept="audio/*"
+                        >
+                          <p className="ant-upload-drag-icon">Drag an audio file here or click to select</p>
+                          <p className="ant-upload-text">Upload a single audio file for this prompt.</p>
+                        </Dragger>
+                      </Form.Item>
+                    )}
 
                     <Form.Item label="Upload prompt PDF">
                       <Dragger
@@ -527,6 +706,88 @@ export default function AdminDashboard() {
                 </>
               ),
             },
+            {
+              key: 'bulk-upload',
+              label: '🚀 Bulk Upload',
+              children: (
+                <div className="space-y-6">
+                  <Card className={isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}>
+                    <Typography.Title level={4} className="!mb-4">
+                      <ImportOutlined className="mr-2" />
+                      Import Multiple Prompts
+                    </Typography.Title>
+                    <Typography.Paragraph>
+                      Paste JSON data with multiple prompt objects. Each prompt will be uploaded to the database.
+                    </Typography.Paragraph>
+                    <Typography.Paragraph type="secondary" className="text-sm">
+                      <strong>JSON Format Example:</strong>
+                      <pre className={`mt-2 p-3 rounded text-xs overflow-auto ${isDark ? 'bg-slate-900' : 'bg-white border'}`}>
+{`[
+  {
+    "title": "Prompt Title",
+    "category": "code",
+    "description": "Description",
+    "promptText": "Your prompt text...",
+    "tags": ["tag1", "tag2"],
+    "difficulty": "beginner",
+    "useCases": ["use case 1"],
+    "aiTools": ["ChatGPT"],
+    "copyCount": 100,
+    "rating": 4.5,
+    "ratingCount": 50
+  }
+]`}
+                      </pre>
+                    </Typography.Paragraph>
+                  </Card>
+
+                  <Form layout="vertical">
+                    <Form.Item label="Paste JSON Data">
+                      <Input.TextArea
+                        rows={12}
+                        placeholder="Paste JSON array of prompts here..."
+                        value={bulkJsonInput}
+                        onChange={(e) => setBulkJsonInput(e.target.value)}
+                      />
+                    </Form.Item>
+                    <Form.Item>
+                      <Button
+                        type="primary"
+                        size="large"
+                        icon={<ImportOutlined />}
+                        onClick={handleBulkUpload}
+                        loading={bulkUploading}
+                        block
+                      >
+                        Upload {bulkProgress.total > 0 ? `(${bulkProgress.current}/${bulkProgress.total})` : 'Prompts'}
+                      </Button>
+                    </Form.Item>
+                  </Form>
+
+                  {bulkProgress.total > 0 && (
+                    <Card className={isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}>
+                      <Typography.Title level={5} className="!mb-4">Upload Results</Typography.Title>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {bulkResults.map((result, idx) => (
+                          <div key={idx} className="flex items-center gap-3 p-2 rounded border">
+                            {result.success ? (
+                              <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                            ) : (
+                              <DeleteOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
+                            )}
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{result.title}</p>
+                              {result.error && <p className="text-xs text-red-500">{result.error}</p>}
+                              {result.id && <p className="text-xs text-green-600">ID: {result.id}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+                </div>
+              ),
+            },
           ]}
         />
       </Card>
@@ -544,8 +805,8 @@ export default function AdminDashboard() {
           <Form.Item label="Title" name="title" rules={[{ required: true, min: 3 }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Category" name="category" rules={[{ required: true, min: 2 }]}>
-            <Input />
+          <Form.Item label="Category" name="category" rules={[{ required: true, message: 'Please select a category' }]}>
+            <Select placeholder="Select a category" options={categories} />
           </Form.Item>
           <Form.Item label="Status" name="status" rules={[{ required: true }]}>
             <Select

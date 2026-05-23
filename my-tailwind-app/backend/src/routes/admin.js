@@ -11,6 +11,9 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { env } from '../config/env.js';
+import Testimonial from '../models/Testimonial.js';
+import SiteStat from '../models/SiteStat.js';
+import Category from '../models/Category.js';
 
 const router = Router();
 
@@ -34,9 +37,20 @@ const allowedMime = new Set([
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024, files: 11 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 11 },
   fileFilter: (_req, file, cb) => {
-    if (!allowedMime.has(file.mimetype)) {
+    // allow common image, pdf, audio and video mime types
+    const allowed = new Set([
+      ...allowedMime,
+      'audio/mpeg',
+      'audio/wav',
+      'audio/x-wav',
+      'audio/ogg',
+      'video/mp4',
+      'video/webm',
+      'video/quicktime',
+    ]);
+    if (!allowed.has(file.mimetype)) {
       return cb(new Error(`Unsupported file type: ${file.mimetype}`));
     }
     cb(null, true);
@@ -178,12 +192,15 @@ router.post(
   upload.fields([
     { name: 'images', maxCount: 10 },
     { name: 'promptPdf', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+    { name: 'audio', maxCount: 1 },
   ]),
   asyncHandler(async (req, res) => {
     const { title, category, description, promptText } = req.body;
     const files = req.files || {};
     let createdPrompt = null;
     const mediaItems = [];
+    const mediaPaths = { images: [], video: null, audio: null, pdf: null };
 
     const saveMedia = async (file, type, promptId = null) => {
       const url = `/uploads/${path.basename(file.path)}`;
@@ -194,6 +211,11 @@ router.post(
         description: description || '',
       });
       mediaItems.push(media);
+      // record path for attaching to Prompt.media later
+      if (type === 'current-image') mediaPaths.images.push(url);
+      if (type === 'video') mediaPaths.video = url;
+      if (type === 'audio') mediaPaths.audio = url;
+      if (type === 'prompt-pdf') mediaPaths.pdf = url;
     };
 
     if (promptText || files.promptPdf?.length) {
@@ -225,8 +247,28 @@ router.post(
     for (const file of files.images || []) {
       await saveMedia(file, 'current-image', createdPrompt?._id);
     }
+    if (files.video?.length) {
+      await saveMedia(files.video[0], 'video', createdPrompt?._id);
+    }
+    if (files.audio?.length) {
+      await saveMedia(files.audio[0], 'audio', createdPrompt?._id);
+    }
     if (files.promptPdf?.length) {
       await saveMedia(files.promptPdf[0], 'prompt-pdf', createdPrompt?._id);
+    }
+
+    // Attach media references to created prompt so frontend can show them directly
+    if (createdPrompt) {
+      const mediaUpdate = {};
+      if (mediaPaths.images.length) {
+        mediaUpdate['media.beforeImage'] = mediaPaths.images[0];
+        if (mediaPaths.images[1]) mediaUpdate['media.afterImage'] = mediaPaths.images[1];
+      }
+      if (mediaPaths.video) mediaUpdate['media.videoUrl'] = mediaPaths.video;
+      if (mediaPaths.audio) mediaUpdate['media.audioUrl'] = mediaPaths.audio;
+      if (Object.keys(mediaUpdate).length) {
+        await Prompt.findByIdAndUpdate(createdPrompt._id, { $set: mediaUpdate }, { new: true });
+      }
     }
 
     res.status(201).json({
@@ -238,4 +280,128 @@ router.post(
   })
 );
 
+  // --- Site content management (testimonials & stats)
+  router.get(
+    '/site/testimonials',
+    asyncHandler(async (_req, res) => {
+      const items = await Testimonial.find().sort({ order: 1, createdAt: -1 }).limit(200);
+      res.json(items);
+    })
+  );
+
+  router.post(
+    '/site/testimonials',
+    asyncHandler(async (req, res) => {
+      const { quote, author, role, avatarUrl, order = 0, active = true } = req.body || {};
+      if (!quote || !author) return res.status(400).json({ error: 'quote and author are required' });
+      const created = await Testimonial.create({ quote, author, role, avatarUrl, order, active });
+      res.status(201).json(created);
+    })
+  );
+
+  router.patch(
+    '/site/testimonials/:id',
+    asyncHandler(async (req, res) => {
+      const updated = await Testimonial.findByIdAndUpdate(req.params.id, req.body || {}, { new: true, runValidators: true });
+      if (!updated) return res.status(404).json({ error: 'Not found' });
+      res.json(updated);
+    })
+  );
+
+  router.delete(
+    '/site/testimonials/:id',
+    asyncHandler(async (req, res) => {
+      await Testimonial.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    })
+  );
+
+  router.get(
+    '/site/stats',
+    asyncHandler(async (_req, res) => {
+      const items = await SiteStat.find().sort({ order: 1 }).limit(200);
+      res.json(items);
+    })
+  );
+
+  router.post(
+    '/site/stats',
+    asyncHandler(async (req, res) => {
+      const { key, label, value, order = 0 } = req.body || {};
+      if (!key || !label) return res.status(400).json({ error: 'key and label required' });
+      const existing = await SiteStat.findOne({ key });
+      if (existing) {
+        existing.label = label;
+        existing.value = value;
+        existing.order = order;
+        await existing.save();
+        return res.json(existing);
+      }
+      const created = await SiteStat.create({ key, label, value, order });
+      res.status(201).json(created);
+    })
+  );
+
+  router.patch(
+    '/site/stats/:id',
+    asyncHandler(async (req, res) => {
+      const updated = await SiteStat.findByIdAndUpdate(req.params.id, req.body || {}, { new: true, runValidators: true });
+      if (!updated) return res.status(404).json({ error: 'Not found' });
+      res.json(updated);
+    })
+  );
+
+  router.delete(
+    '/site/stats/:id',
+    asyncHandler(async (req, res) => {
+      await SiteStat.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    })
+  );
+
+  // Categories management
+  router.get(
+    '/site/categories',
+    asyncHandler(async (_req, res) => {
+      const items = await Category.find().sort({ order: 1 }).limit(200);
+      res.json(items);
+    })
+  );
+
+  router.post(
+    '/site/categories',
+    asyncHandler(async (req, res) => {
+      const { value, label, order = 0, active = true } = req.body || {};
+      if (!value || !label) return res.status(400).json({ error: 'value and label required' });
+      const existing = await Category.findOne({ value });
+      if (existing) {
+        existing.label = label;
+        existing.order = order;
+        existing.active = active;
+        await existing.save();
+        return res.json(existing);
+      }
+      const created = await Category.create({ value, label, order, active });
+      res.status(201).json(created);
+    })
+  );
+
+  router.patch(
+    '/site/categories/:id',
+    asyncHandler(async (req, res) => {
+      const updated = await Category.findByIdAndUpdate(req.params.id, req.body || {}, { new: true, runValidators: true });
+      if (!updated) return res.status(404).json({ error: 'Not found' });
+      res.json(updated);
+    })
+  );
+
+  router.delete(
+    '/site/categories/:id',
+    asyncHandler(async (req, res) => {
+      await Category.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    })
+  );
+
 export default router;
+

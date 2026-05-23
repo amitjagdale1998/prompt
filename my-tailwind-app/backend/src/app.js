@@ -12,6 +12,9 @@ import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
 import promptRoutes from './routes/prompts.js';
 import userRoutes from './routes/users.js';
+import imagesRoutes from './routes/images.js';
+import mediaRoutes from './routes/media.js';
+import siteRoutes from './routes/site.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const uploadRoot = path.resolve(env.UPLOAD_DIR);
@@ -58,6 +61,9 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/prompts', promptRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/images', imagesRoutes);
+app.use('/api/media', mediaRoutes);
+app.use('/api/site', siteRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

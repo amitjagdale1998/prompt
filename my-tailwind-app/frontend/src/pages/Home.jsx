@@ -1,5 +1,7 @@
 import { Collapse, Tag, Typography } from 'antd';
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const features = [
   {
@@ -38,20 +40,7 @@ const pricing = [
   },
 ];
 
-const testimonials = [
-  {
-    quote:
-      'This dashboard helped our team standardize prompt quality. We ship faster and spend less time rewriting prompts.',
-    author: 'Nisha Kulkarni',
-    role: 'Frontend Lead, Pune',
-  },
-  {
-    quote:
-      'The UI feels premium and focused. The admin controls are exactly what we needed to manage growing prompt datasets.',
-    author: 'Amit J.',
-    role: 'Founder, Prompt Lab',
-  },
-];
+// Testimonials and stats are fetched from the backend so they are editable via admin.
 
 const faqItems = [
   {
@@ -72,6 +61,28 @@ const faqItems = [
 ];
 
 export default function Home() {
+  const [testimonials, setTestimonials] = useState([]);
+  const [stats, setStats] = useState({});
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [tRes, sRes] = await Promise.all([
+          axios.get('/api/site/testimonials'),
+          axios.get('/api/site/stats'),
+        ]);
+        if (!mounted) return;
+        setTestimonials(Array.isArray(tRes.data) ? tRes.data : []);
+        setStats(sRes.data || {});
+      } catch (err) {
+        // ignore and leave defaults
+        console.warn('Failed to load site content', err?.message || err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="fade-in">
       <section className="saas-section">
@@ -90,9 +101,6 @@ export default function Home() {
             <div className="flex flex-wrap gap-3 mt-8">
               <Link className="btn-primary" to="/prompts">
                 Explore Prompts
-              </Link>
-              <Link className="btn-secondary" to="/admin">
-                Open Admin Panel
               </Link>
             </div>
           </div>
@@ -130,19 +138,19 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
               <div className="saas-card !p-4">
                 <p className="text-sm text-[var(--color-text-muted)] mb-1">Total Prompts</p>
-                <p className="text-2xl font-bold">1,284</p>
+                <p className="text-2xl font-bold">{stats.totalPrompts?.value ?? '—'}</p>
               </div>
               <div className="saas-card !p-4">
                 <p className="text-sm text-[var(--color-text-muted)] mb-1">Active Users</p>
-                <p className="text-2xl font-bold">8,940</p>
+                <p className="text-2xl font-bold">{stats.activeUsers?.value ?? '—'}</p>
               </div>
               <div className="saas-card !p-4">
                 <p className="text-sm text-[var(--color-text-muted)] mb-1">Copy Actions</p>
-                <p className="text-2xl font-bold">32.1K</p>
+                <p className="text-2xl font-bold">{stats.copyActions?.value ?? '—'}</p>
               </div>
               <div className="saas-card !p-4">
                 <p className="text-sm text-[var(--color-text-muted)] mb-1">MRR</p>
-                <p className="text-2xl font-bold">₹2.7L</p>
+                <p className="text-2xl font-bold">{stats.mrr?.value ?? '—'}</p>
               </div>
             </div>
           </div>
@@ -154,15 +162,19 @@ export default function Home() {
           <Typography.Title level={2} className="!mb-6">
             Testimonials
           </Typography.Title>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {testimonials.map((item) => (
-              <article key={item.author} className="saas-card">
-                <Typography.Paragraph className="saas-subtitle !text-base">"{item.quote}"</Typography.Paragraph>
-                <p className="font-semibold mt-5">{item.author}</p>
-                <p className="text-sm text-[var(--color-text-muted)]">{item.role}</p>
-              </article>
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {testimonials.length ? (
+                testimonials.map((item) => (
+                  <article key={item._id || item.author} className="saas-card">
+                    <Typography.Paragraph className="saas-subtitle !text-base">"{item.quote}"</Typography.Paragraph>
+                    <p className="font-semibold mt-5">{item.author}</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">{item.role}</p>
+                  </article>
+                ))
+              ) : (
+                <div className="saas-card">No testimonials yet.</div>
+              )}
+            </div>
         </div>
       </section>
 
