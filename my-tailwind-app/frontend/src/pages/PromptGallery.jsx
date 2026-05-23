@@ -3,6 +3,7 @@ import { Card, Col, Input, Row, Tag, Typography, Tooltip, message, Badge, Modal,
 import { CopyOutlined, CameraOutlined, PictureOutlined, VideoCameraOutlined, SoundOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { aiTools } from '../data/aiTools';
+import { CATEGORIES } from '../data/categories';
 
 const demoPrompts = [
   // Code Editing (3 prompts)
