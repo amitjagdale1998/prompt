@@ -15,6 +15,7 @@
     "dev:backend": "npm --workspace backend run dev",
     "dev": "concurrently -n frontend,backend -c blue,green \"npm --workspace frontend run dev\" \"npm --workspace backend run dev\"",
     "build": "npm --workspace frontend run build",
+    "vercel-build": "npm --workspace frontend run build",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,jsx,json,md,css}\""
   },
@@ -24,5 +25,8 @@
     "eslint": "^9.15.0",
     "globals": "^15.12.0",
     "prettier": "^3.4.1"
+  },
+  "dependencies": {
+    "serverless-http": "^4.0.0"
   }
 }

@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
+    "build": "node -e \"console.log('Backend build skipped - no compile step required')\"",
+    "vercel-start": "node src/index.js",
     "lint": "eslint \"src/**/*.js\""
   },
   "dependencies": {
